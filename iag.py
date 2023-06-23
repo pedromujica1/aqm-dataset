@@ -10,12 +10,15 @@ import pandas as pd
 
 
 fn = 'IAG/estacao_iag.csv'
-df = pd.read_csv(fn)
-print(df.columns)
+df = pd.read_csv(fn, decimal=',')
+df.set_index('time', inplace=True)
+df.index = pd.to_datetime(df.index).tz_localize('Brazil/East').strftime('%Y-%m-%d %H:%M:00')
+
 
 for col in df.columns:
     c = col.split()
     print("".join(c[0:len(c) -1]).lower())
     
 df.columns = ["".join(c.split()[0:len(c.split()) -1]).lower() for c in df.columns] 
-df.to_csv('IAG/iag_df.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
+df.add_prefix('iag_')
+df.to_csv('iag_df.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
