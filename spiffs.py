@@ -8,6 +8,15 @@ Created on Thu Jun 22 17:33:50 2023
 import pandas as pd
 import matplotlib.pyplot as plt
 
+def convert_float(value):
+    try:
+        return float(value.replace(',', '.'))
+    except ValueError:
+        return -5
+    except AttributeError:
+        return -8
+
+
 df1 = pd.read_csv("all_tago_df.csv")
 df1.set_index('time', inplace=True)
 
@@ -23,22 +32,21 @@ df2= df2[~df2.index.duplicated()]
 
 df2 = df2.resample('1T').asfreq()
 
-# Step 3: Join the DataFrames based on a common column(s)
-#joined_df = pd.merge(df1, df2, left_index=True, right_index=True)
-#joined_df = df1.join(df2, lsuffix='_df1', rsuffix='_df2')
-#joined_df = df1.join(df2, lsuffix='_df1', rsuffix='_df2', how='right')
-#joined_df = df1.join(df2, lsuffix='_df1', rsuffix='_df2', how='outer')
+dt = df2.dtypes.values == 'object'
+for col in df2.dtypes.index[dt]:
+    df2[col] = df2[col].apply(convert_float).astype('float64')
 
-#joined_df.to_csv('teste.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
-
-#for col in df2.columns:
-#    df1[df2.index]
 
 # Step 4: Output the joined DataFrame
 for col in df2.columns:
     df1.loc[str(df2.index[0]):str(df2.index[-1]), col] = df2[col].values
 
+
+for i in df1.dtypes:
+    print(i)
+
+df1['iag_co'].plot()
 #print(df2[col])
 #print(df1.loc[str(df2.index[0]):str(df2.index[-1])][col])
 
-df1.to_csv('envcity_aqm_df.csv')
+df1.to_csv('envcity_aqm_df.csv', decimal='.')
