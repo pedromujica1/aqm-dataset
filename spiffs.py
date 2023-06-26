@@ -27,26 +27,40 @@ df2.index = pd.to_datetime(df2.index ,unit='s').tz_localize('Brazil/East').strft
 
 df2 = df2.add_prefix("e2sp_")
 
+
 df2.index = pd.DatetimeIndex(df2.index)
 df2= df2[~df2.index.duplicated()] 
 
-df2 = df2.resample('1T').asfreq()
+
+#orfun = df2.resample('1min').asfreq()
+#df2 = df2.reindex_like(forfun)
+
+plt.figure()
+df2['e2sp_temp'].plot(marker = '.')
+plt.show()
 
 dt = df2.dtypes.values == 'object'
 for col in df2.dtypes.index[dt]:
     df2[col] = df2[col].apply(convert_float).astype('float64')
 
+print(df2.columns)
 
-# Step 4: Output the joined DataFrame
 for col in df2.columns:
-    df1.loc[str(df2.index[0]):str(df2.index[-1]), col] = df2[col].values
+    for idx in df2.index:
+        df1.loc[idx,col] = df2.loc[idx, col]
+#for col in ['e2sp_temp', 'e2sp_umid']:
+#     print(col)
+#     df1.loc[str(df2.index[0]):str(df2.index[-1]), col] = df2[col].values
+    
 
+# for val, idx in zip(df2['e2sp_temp'], df2['e2sp_temp'].index):
+#     print(idx, val)
+    
+plt.figure()
+plt.plot(df2['e2sp_temp'].values, marker='.')
 
-for i in df1.dtypes:
-    print(i)
-
-df1['iag_co'].plot()
 #print(df2[col])
 #print(df1.loc[str(df2.index[0]):str(df2.index[-1])][col])
 
-df1.to_csv('envcity_aqm_df.csv', decimal='.')
+print(df2.index[0], str(df2.index[-1]))
+df1.to_csv('envcity_aqm_df_teste.csv', decimal='.')
