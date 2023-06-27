@@ -21,17 +21,21 @@ df3.set_index('time', inplace=True)
 df4 = pd.read_csv('iag_df.csv')
 df4.set_index('time', inplace=True)
 
-joined_df = pd.concat()
+df5 = pd.read_csv('iag_df_complementar.csv')
+df5.set_index('time', inplace=True)
+
 # Step 3: Join the datasets side by side
-joined_df = pd.concat([df1, df2, df3, df4], axis=0, verify_integrity=False)
-joined_df.drop_duplicates(inplace=True)
+joined_df = pd.concat([df1, df2, df3, df4, df5], axis=0, verify_integrity=False)
+#joined_df.drop_duplicates(inplace=True)
+
 for i in joined_df.dtypes:
     print(i)
 
 
+joined_df.index = pd.DatetimeIndex(joined_df.index)
+joined_df = joined_df.sort_values('time').groupby('time').agg('mean')
+joined_df.to_csv('envcity_aqm_df_ok.csv', decimal='.')
+
 joined_df['iag_co'].plot()
-
-joined_df.to_csv('all_tago_df.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
-
 # Step 4: Output the joined DataFrame
 print(joined_df)

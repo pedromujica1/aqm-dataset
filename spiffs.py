@@ -17,7 +17,7 @@ def convert_float(value):
         return -8
 
 
-df1 = pd.read_csv("all_tago_df.csv")
+df1 = pd.read_csv("e2sp_df.csv")
 df1.set_index('time', inplace=True)
 
 df2 = pd.read_csv("data_spiffs.csv")
@@ -27,40 +27,29 @@ df2.index = pd.to_datetime(df2.index ,unit='s').tz_localize('Brazil/East').strft
 
 df2 = df2.add_prefix("e2sp_")
 
-
 df2.index = pd.DatetimeIndex(df2.index)
-df2= df2[~df2.index.duplicated()] 
-
+#df2= df2[~df2.index.duplicated()] 
 
 #orfun = df2.resample('1min').asfreq()
 #df2 = df2.reindex_like(forfun)
 
-plt.figure()
-df2['e2sp_temp'].plot(marker = '.')
-plt.show()
 
 dt = df2.dtypes.values == 'object'
 for col in df2.dtypes.index[dt]:
     df2[col] = df2[col].apply(convert_float).astype('float64')
 
-print(df2.columns)
+joined_df = pd.concat([df1, df2], axis=0, verify_integrity=False)
 
-for col in df2.columns:
-    for idx in df2.index:
-        df1.loc[idx,col] = df2.loc[idx, col]
 #for col in ['e2sp_temp', 'e2sp_umid']:
 #     print(col)
 #     df1.loc[str(df2.index[0]):str(df2.index[-1]), col] = df2[col].values
-    
+     
 
-# for val, idx in zip(df2['e2sp_temp'], df2['e2sp_temp'].index):
-#     print(idx, val)
-    
-plt.figure()
-plt.plot(df2['e2sp_temp'].values, marker='.')
+print(df1.index.min(), str(df1.index.max()))
+print(df2.index.min(), str(df2.index.max()))
+# print(joined_df.index.min(), str(joined_df.index.max()))
+# joined_df.to_csv('spiffs_concat.csv', decimal='.')
 
-#print(df2[col])
-#print(df1.loc[str(df2.index[0]):str(df2.index[-1])][col])
-
-print(df2.index[0], str(df2.index[-1]))
-df1.to_csv('envcity_aqm_df_teste.csv', decimal='.')
+joined_df.index = pd.DatetimeIndex(joined_df.index)
+joined_df = joined_df.sort_values('time').groupby('time').agg('mean')
+joined_df.to_csv('e2sp_df.csv', decimal='.')
