@@ -4,7 +4,7 @@ import glob
 # Step 1: Import the necessary libraries
 
 # Step 2: Get a list of all the monthly datasets in a specific directory
-file_list = glob.glob('E1/*.csv')  # Replace 'path/to/monthly_datasets/' with the actual directory path containing your monthly datasets
+file_list = glob.glob('E2-SP/*.csv')  # Replace 'path/to/monthly_datasets/' with the actual directory path containing your monthly datasets
 
 # Step 3: Create an empty list to store the individual DataFrames
 dfs = []
@@ -50,6 +50,6 @@ pivoted_df = pivoted_df.add_prefix('e1_')
 # Step 9: Output the transformed DataFrame
 #print(pivoted_df)
 print(pivoted_df.dtypes)
-pivoted_df['e1_co'].plot()
+pivoted_df['e1_co'].plot(marker='.')
 
 # %%

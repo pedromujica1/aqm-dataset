@@ -28,6 +28,9 @@ print("Numpy version: ", np.__version__)
 print("Pandas version: ", pd.__version__)
 
 
+from envcity_plot_lib import *
+
+
 # In[12]:
 
 
@@ -158,154 +161,6 @@ def exploratory_analysis(dict_data_e1, dict_data_e2, labels, latex_labels, start
 # In[40]:
 
 
-import matplotlib.dates as mdates
-from matplotlib.gridspec import GridSpec
-from matplotlib.ticker import EngFormatter
-
-def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_labels, start, end, e1_label = 'Station 1', e2_label = 'Station 2', style_plot = 'dark'):
-
-    for idx, l in enumerate(labels):
-
-        e1 = dict_data_e1[l].loc[start:end]
-        e2 = dict_data_e2[l].loc[start:end]
-
-        concatenated = pd.concat([e1, e2], axis=1, keys=[e1_label, e2_label])
-
-        #with sns.axes_style(style=style_plot):
-        sns.set_palette(style_plot)
-
-        # fig, ax = plt.subplots(1, 2, figsize=(10, 4), layout='constrained')
-        fig = plt.figure(figsize=(12, 4), layout='tight')
-        gs = GridSpec(1, 2, width_ratios=[3,1])
-
-        ax1 = fig.add_subplot(gs[0])
-        ax2 = fig.add_subplot(gs[1])
-
-        sns.lineplot(data=concatenated, linewidth=1, ax=ax1)
-        sns.regplot(data=concatenated, x = e1_label, y = e2_label, ax = ax2, marker = '.')
-
-        # Set axis labels and title
-        ax1.set_title(f"$\mathrm{{{latex_labels[idx]}}}$ Concentration from {start} to {end}")
-        ax1.set_ylabel("Concentration (ppb)")
-        ax1.set_xlabel("Date")
-
-        ax2.set_ylabel(e2_label)
-        ax2.set_xlabel(e1_label)
-
-        ax2.set_box_aspect(1)
-
-        # Format the x-axis labels
-        date_format = mdates.DateFormatter('%d/%m/%y')
-        ax1.xaxis.set_major_formatter(date_format)
-        ax1.tick_params(axis='x', labelrotation=45)
-
-        # ax1.set_xlim([0, dict_data_e1[l].index[-1]])
-
-        # Using metric prefixes
-        ax1.yaxis.set_major_formatter(EngFormatter())
-        ax2.yaxis.set_major_formatter(EngFormatter())
-        ax2.xaxis.set_major_formatter(EngFormatter())
-
-        # ax1.margins(0.1, 0.1)
-        # ax2.margins(0.2, 0.2)
-
-        ax1.autoscale(enable = None, axis="x", tight=True)
-        # ax2.autoscale(enable=None, axis="x", tight=True)
-
-        # ax2.legend(loc='upper right', frameon=False, bbox_to_anchor=(1.25, 1.05))
-        # fig.savefig(f"{l}_time.pdf", format='pdf', dpi=fig.dpi, bbox_inches='tight')
-
-        plt.show()
-
-def plot_data_by_time(dict_data_e1, dict_data_e2, labels, latex_labels, start, end, style_plot = 'dark'):
-
-    for idx, l in enumerate(labels):
-
-        e1 = dict_data_e1[l].loc[start:end]
-        e2 = dict_data_e2[l].loc[start:end]
-
-        concatenated = pd.concat([e1, e2], axis=1, keys=['Station 1', 'Station 2'])
-
-        fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-        sns.lineplot(data=concatenated, linewidth=1, ax=ax)
-
-        # Set axis labels and title
-        ax.set_title(f"$\mathrm{{{latex_labels[idx]}}}$ Concentration from {start} to {end}")
-        ax.set_ylabel("Concentration (ppb)")
-        ax.set_xlabel("Date")
-
-        # Format the x-axis labels
-        date_format = mdates.DateFormatter('%d/%m/%y')
-        ax.xaxis.set_major_formatter(date_format)
-        ax.tick_params(axis='x', labelrotation=45)
-
-        # format the y-axis labels
-        ax.yaxis.set_major_formatter(EngFormatter())
-
-        # ax.margins(0.2, 0.2)
-        ax.autoscale(enable=None, tight=True)
-
-        ax.legend(loc='upper right', frameon=False, bbox_to_anchor=(1.3, 1.05))
-        fig.savefig(f"{l}_time.pdf", format='pdf', dpi=fig.dpi, bbox_inches='tight')
-
-        plt.tight_layout()
-        plt.show()
-
-def plot_boxplot(dict_data_e1, dict_data_e2, labels, latex_labels, start, end, style_plot = 'dark'):
-
-    for idx, l in enumerate(labels):
-
-        e1 = dict_data_e1[l].loc[start:end]
-        e2 = dict_data_e2[l].loc[start:end]
-
-        # For comparing all equations just uncomment these two lines
-        # e1_concat = pd.concat(e1, axis = 1, keys = ["Equação 1", "Equação 2", "Equação 3", "Equação 4"])
-        # e2_concat = pd.concat(e2, axis = 1, keys = ["Equação 1", "Equação 2", "Equação 3", "Equação 4"])
-        concatenated = pd.concat([e1, e2], axis=1, keys=['Station 1', 'Station 2'])
-
-        melted = pd.melt(concatenated, var_name=['Data', 'sensor'], value_name='value', ignore_index=False)
-
-        sns.set_palette(style_plot)
-        #with sns.axes_style(style=style_plot):
-
-        fig, ax = plt.subplots(1, 1, figsize = (5, 2))
-        bp = sns.boxplot(data=melted, x="sensor", y = 'value', hue = 'Data', ax = ax, width=0.7, linewidth=1, fliersize=5)
-        bp.set(xlabel = "")
-        ax.set_title(f"$\mathrm{{{latex_labels[idx]}}}$ Concentration from {start} to {end}", fontsize = 10)
-        ax.set_ylabel("ppb")
-        ax.legend(loc='upper right', frameon = False, bbox_to_anchor=(1.35, 1.05))
-        ax.set(xticklabels=[])
-        ax.tick_params(bottom=False)
-        ax.yaxis.set_major_formatter(EngFormatter())
-
-        fig.savefig(f"{l}.pdf", format = 'pdf', dpi=fig.dpi, bbox_inches =  'tight')
-        plt.show()
-
-def plot_boxplot_alphasense_equations(dict_data_e1, dict_data_e2, labels, latex_labels, start, end, style_plot = 'dark'):
-
-    for idx, l in enumerate(labels):
-
-        e1 = dict_data_e1[l].loc[start:end]
-        e2 = dict_data_e2[l].loc[start:end]
-
-        concatenated = pd.concat([e1, e2], axis=1, keys=['Station 1', 'Station 2'])
-
-        melted = pd.melt(concatenated, var_name=['Data', 'sensor'], value_name='value', ignore_index=False)
-
-        sns.set_palette(style_plot)
-        #with sns.axes_style(style=style_plot):
-
-        fig, ax = plt.subplots(1, 1, figsize = (5, 2))
-        bp = sns.boxplot(data=melted, x="sensor", y = 'value', hue = 'Data', ax = ax, width=0.7, linewidth=1, fliersize=3)
-        ax.set_title(f"$\mathrm{{{latex_labels[idx]}}}$ Concentration from {start} to {end}", fontsize = 10)
-        ax.set_ylabel("ppb")
-        ax.legend(loc='upper right', frameon = False, bbox_to_anchor=(1.4, 1.05))
-        ax.yaxis.set_major_formatter(EngFormatter())
-
-        fig.savefig(f"{l}.pdf", format = 'pdf', dpi=fig.dpi, bbox_inches =  'tight')
-        plt.show()
-
-
 # ### Análise
 
 # #### Resultados complementas:
@@ -365,7 +220,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, KernelCenterer,N
 
 from sklearn.pipeline import make_pipeline
 
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 
 from sklearn.neural_network import MLPRegressor
 
@@ -384,14 +239,16 @@ labels =  ['co_we', 'co_ae']
 preffix = ['e2sp_']
 label_ref= 'iag_co'
 
-df = aqm.loc['2023-03-18 10:00:00':'2023-03-22 10:00:00']
+df = aqm
 
-df = df[[preffix[0] + labels[0], preffix[0] + labels[1],
+df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1],
          'e2sp_so2_we','e2sp_so2_ae', 'e2sp_temp', label_ref]]
 
 df.index = pd.to_datetime(df.index)
-df.dropna(inplace=True)
-
+df = df.resample('15min').mean()
+# df = df.interpolate(method = 'time', limit=5)
+df = df.dropna()
+#
 Yco = df['e2sp_temp']
 
 Xco = df.loc[Yco.index][[preffix[0] + labels[0], preffix[0] + labels[1],'e2sp_so2_we','e2sp_so2_ae']]
@@ -423,16 +280,16 @@ param_grid = {"randomforestregressor__n_estimators": randint(1, 512),
               'randomforestregressor__max_features': ["sqrt", "log2", None],
               'randomforestregressor__criterion': ['squared_error', 'absolute_error', 'friedman_mse']}
 # 
-regressor = make_pipeline( RandomForestRegressor())
-# gs = MLPRegressor(2, max_iter = 10000)
+regressor = make_pipeline(RandomForestRegressor())
+# gs = AdaBoostRegressor()
 
 gs = RandomizedSearchCV(regressor, param_distributions=param_grid, n_jobs=-1, verbose = 3,\
-                  return_train_score=True, cv = kfold, error_score = 'raise')
+                  return_train_score=True, cv = kfold, error_score = 'raise', random_state = 1)
 
     
 res = gs.fit(X_train,y_train)
 
-#%%
+# %%
 print(res.cv_results_)
 #%%
 
@@ -442,6 +299,7 @@ print(res.cv_results_)
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
 print("Validation Score: ", r2_score(y_valid, gs.predict(X_valid)))
+print("Validation Score: ", gs.score(X_valid, y_valid))
 
 sns.regplot(x = y_valid, y = gs.predict(X_valid))
 sns.regplot(x = y_test, y = gs.predict(X_test))
@@ -449,5 +307,24 @@ sns.regplot(x = y_test, y = gs.predict(X_test))
 
 #%%
 
-plt.plot(df['e2sp_temp'].values)
-plt.plot(gs.predict(Xco))
+# df['e2sp_temp'].plot(marker='.')
+plt.plot(df['e2sp_temp'].values, marker = '.')
+plt.plot(gs.predict(Xco), marker = '.')
+
+#%%
+
+## ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
+d1 = {'e2_co': df['e2sp_co_we']}
+print(d1['e2_co'])
+plot_data_by_time_and_regr_plot(d1,d1, labels = ['e2_co'], latex_labels=['CO_{we}'], start='2023-03-18 10:00:00', end='2023-03-22 10:00:00', style_plot = 'dark')
+ 
+
+#%%
+
+from alphasense_b_sensors.alphasense_sensors import Alphasense_Sensors
+
+co = Alphasense_Sensors("CO-B4", "162741354")
+no2 = Alphasense_Sensors("NO2-B43F", "202742056")
+so2 = Alphasense_Sensors("SO2-B4", "164240348")
+ox = Alphasense_Sensors("OX-B431", "204240461")
+

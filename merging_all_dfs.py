@@ -34,7 +34,7 @@ for i in joined_df.dtypes:
 
 joined_df.index = pd.DatetimeIndex(joined_df.index)
 joined_df = joined_df.sort_values('time').groupby('time').agg('mean')
-joined_df.to_csv('envcity_aqm_df_ok.csv', decimal='.')
+joined_df.to_csv('envcity_aqm_df.csv', decimal='.')
 
 joined_df['iag_co'].plot()
 # Step 4: Output the joined DataFrame
