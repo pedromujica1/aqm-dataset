@@ -68,7 +68,7 @@ def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_la
 
         ax1.autoscale(enable = None, axis="x", tight=True)
         # ax2.autoscale(enable=None, axis="x", tight=True)
-
+        fig.autofmt_xdate()
         # ax2.legend(loc='upper right', frameon=False, bbox_to_anchor=(1.25, 1.05))
         # fig.savefig(f"{l}_time.pdf", format='pdf', dpi=fig.dpi, bbox_inches='tight')
 

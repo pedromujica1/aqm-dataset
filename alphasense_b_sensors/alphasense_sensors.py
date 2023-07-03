@@ -5,9 +5,8 @@ Created on Tue Mar  1 16:39:50 2022
 @author: maruzka
 """
 
-import pickle as pi
-import dados_correcao_temp as dados_temp
-import dados_alphasense as dados_sens
+import alphasense_b_sensors.dados_correcao_temp as dados_temp
+import alphasense_b_sensors.dados_alphasense as dados_sens
 import numpy as np
 import functools
 
@@ -69,30 +68,26 @@ class Alphasense_Sensors:
         return data.values()
             
     def __algorithm_1(self, raw_we, raw_ae, temp):
-        kt = self.temp_correction_coef[0][temp // 10 + 3]
-        #print("kt", kt)
-
-        # kt = dados_temp.ajuste_temp[self.__sensor_model][3]
-        return (raw_we - self.electronic_we) - kt*(raw_ae - self.electronic_ae)
+        idx_temp = (temp // 10 + 3).astype('int32')
+        kt = self.temp_correction_coef[0][idx_temp]
+        return ((raw_we - self.electronic_we) - kt*(raw_ae - self.electronic_ae))/self.sensitivity
     
     def __algorithm_2(self, raw_we, raw_ae, temp):
-        kt = self.temp_correction_coef[1][temp // 10 + 3]
-        #print("kt", kt)
-
-        return (raw_we - self.electronic_we) - \
-        (self.we_zero / self.ae_zero)*kt*(raw_ae - self.electronic_ae)
+        idx_temp = (temp // 10 + 3).astype('int32')
+        kt = self.temp_correction_coef[1][idx_temp]
+        return ((raw_we - self.electronic_we) - \
+        (self.we_zero / self.ae_zero)*kt*(raw_ae - self.electronic_ae))/self.sensitivity
     
     def __algorithm_3(self, raw_we, raw_ae, temp):
-        kt = self.temp_correction_coef[2][temp // 10 + 3]
-        # print("kt", kt)
-
-        return (raw_we - self.electronic_we) - (self.we_zero - self.ae_zero) \
-               - kt*(raw_ae - self.electronic_ae)
+        idx_temp = (temp // 10 + 3).astype('int32')
+        kt = self.temp_correction_coef[2][idx_temp]
+        return ((raw_we - self.electronic_we) - (self.we_zero - self.ae_zero) \
+               - kt*(raw_ae - self.electronic_ae))/self.sensitivity
                
     def __algorithm_4(self, raw_we, raw_ae, temp):
-        kt = self.temp_correction_coef[3][temp // 10 + 3]
-        #print("kt", kt)
-        return (raw_we - self.electronic_we) - self.we_zero - kt
+        idx_temp = (temp // 10 + 3).astype('int32')
+        kt = self.temp_correction_coef[3][idx_temp]
+        return ((raw_we - self.electronic_we) - self.we_zero - kt)/self.sensitivity
     
     def all_algorithms(self, raw_we, raw_ae, temp):
         return (self.__algorithm_1(raw_we, raw_ae, temp), \
@@ -175,7 +170,7 @@ def main():
     
     # Make data.
 
-    temp = 20
+    temp = np.array([10])
     Z1, Z2, Z3, Z4 = co.all_algorithms(we, ae, temp)
     
     # Plot the surface.

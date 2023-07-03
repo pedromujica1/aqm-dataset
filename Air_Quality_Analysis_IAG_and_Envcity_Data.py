@@ -30,6 +30,8 @@ print("Pandas version: ", pd.__version__)
 
 from envcity_plot_lib import *
 
+from alphasense_b_sensors.alphasense_sensors import *
+
 
 # In[12]:
 
@@ -239,21 +241,42 @@ labels =  ['co_we', 'co_ae']
 preffix = ['e2sp_']
 label_ref= 'iag_co'
 
+
 df = aqm
 
-df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1],
-         'e2sp_so2_we','e2sp_so2_ae', 'e2sp_temp', label_ref]]
+df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1], preffix[0] + 'co', 
+          'e2sp_temp', 'e2sp_umid', label_ref]]
 
 df.index = pd.to_datetime(df.index)
-df = df.resample('15min').mean()
+# df = df.resample('15min').mean()
 # df = df.interpolate(method = 'time', limit=5)
 df = df.dropna()
 #
-Yco = df['e2sp_temp']
 
-Xco = df.loc[Yco.index][[preffix[0] + labels[0], preffix[0] + labels[1],'e2sp_so2_we','e2sp_so2_ae']]
+#%%
 
-X_train, X_valid, y_train, y_valid = train_test_split(Xco, Yco, train_size=0.7)
+co = Alphasense_Sensors("CO-B4", "162741354")
+no2 = Alphasense_Sensors("NO2-B43F", "202742056")
+so2 = Alphasense_Sensors("SO2-B4", "164240348")
+ox = Alphasense_Sensors("OX-B431", "204240461")
+
+we = df[preffix[0] + labels[0]]
+ae = df[preffix[0] + labels[1]]
+temp = df[preffix[0] + 'temp']
+ppb, _ , _ , _ = co.all_algorithms(we, ae, temp.to_numpy())
+
+df[preffix[0] + 'co'] = ppb / 1000
+
+# print(df.iloc[0])
+# print(co.all_algorithms(0.46, 0.3, np.array(29.2)))
+
+#%%
+
+Yco = df[label_ref]
+
+Xco = df.loc[Yco.index][[preffix[0] + 'co', preffix[0] + 'temp', preffix[0] + 'umid']]
+
+X_train, X_valid, y_train, y_valid = train_test_split(Xco, Yco, train_size=0.8)
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train)
 
 kfold = RepeatedKFold(n_splits = 5, n_repeats = 1)
@@ -273,24 +296,53 @@ print(X_valid.shape)
 #               'randomforestregressor__criterion': ['squared_error']}
 from scipy.stats import uniform, randint
 
-param_grid = {"randomforestregressor__n_estimators": randint(1, 512),
-              "randomforestregressor__max_depth": randint(1, 512),
+# param_grid = {"randomforestregressor__n_estimators": randint(1, 512),
+#               "randomforestregressor__max_depth": randint(1, 512),
+#               #  "randomforestregressor__oob_score" : [True],
+#               "randomforestregressor__bootstrap" : [False, True],
+#               'randomforestregressor__max_features': ["sqrt", "log2", None],
+#               'randomforestregressor__criterion': ['squared_error', 'absolute_error', 'friedman_mse']}
+# # 
+
+
+param_grid = {"randomforestregressor__n_estimators": np.array([32, 128, 512, 1024]),
+              # "randomforestregressor__max_depth": None,
               #  "randomforestregressor__oob_score" : [True],
-              "randomforestregressor__bootstrap" : [False, True],
-              'randomforestregressor__max_features': ["sqrt", "log2", None],
-              'randomforestregressor__criterion': ['squared_error', 'absolute_error', 'friedman_mse']}
-# 
+              # "randomforestregressor__bootstrap" : [False, True],
+              # 'randomforestregressor__max_features': ["sqrt", "log2", None],
+              'randomforestregressor__criterion': ['squared_error' ]}# 'absolute_error', 'friedman_mse']}
+
 regressor = make_pipeline(RandomForestRegressor())
 # gs = AdaBoostRegressor()
 
-gs = RandomizedSearchCV(regressor, param_distributions=param_grid, n_jobs=-1, verbose = 3,\
-                  return_train_score=True, cv = kfold, error_score = 'raise', random_state = 1)
+gs = GridSearchCV(regressor, param_grid=param_grid, n_jobs=-1, verbose = 3,\
+                  return_train_score=True, cv = kfold, error_score = 'raise')
 
     
-res = gs.fit(X_train,y_train)
+# res = gs.fit(X_train,y_train)
 
 # %%
-print(res.cv_results_)
+print(train_data := pd.DataFrame(res.cv_results_))
+
+with open('tabela_treino.tex', 'w') as f:
+    f.write(train_data.to_latex())
+    
+    
+var = 'squared_error'
+var2 = 'sqrt'
+# mse = train_data.query("param_randomforestregressor__criterion == @var and param_randomforestregressor__max_features == @var2")
+mse = train_data.query("param_randomforestregressor__criterion == @var")
+
+with open('tabela_treino_mse.tex', 'w') as f:
+    f.write(mse.to_latex())
+    
+mse = mse.sort_values('param_randomforestregressor__n_estimators', axis = 0)
+
+# Plot the responses for different events and regions
+sns.lineplot(x="param_randomforestregressor__n_estimators", y="mean_test_score",
+             #hue="param_randomforestregressor__max_features", # style="event",
+             data=train_data)
+
 #%%
 
 # r2_score(y_true, y_pred)
@@ -299,7 +351,7 @@ print(res.cv_results_)
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
 print("Validation Score: ", r2_score(y_valid, gs.predict(X_valid)))
-print("Validation Score: ", gs.score(X_valid, y_valid))
+print("RMSE Score: ", 100*rmse(y_train, gs.predict(X_train)))
 
 sns.regplot(x = y_valid, y = gs.predict(X_valid))
 sns.regplot(x = y_test, y = gs.predict(X_test))
@@ -314,17 +366,7 @@ plt.plot(gs.predict(Xco), marker = '.')
 #%%
 
 ## ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
-d1 = {'e2_co': df['e2sp_co_we']}
-print(d1['e2_co'])
-plot_data_by_time_and_regr_plot(d1,d1, labels = ['e2_co'], latex_labels=['CO_{we}'], start='2023-03-18 10:00:00', end='2023-03-22 10:00:00', style_plot = 'dark')
- 
+
+ox = aqm["e2sp_co_ae"].loc['2023-03-18 10:00:00':'2023-03-22 10:00:00'].plot(marker='.')
 
 #%%
-
-from alphasense_b_sensors.alphasense_sensors import Alphasense_Sensors
-
-co = Alphasense_Sensors("CO-B4", "162741354")
-no2 = Alphasense_Sensors("NO2-B43F", "202742056")
-so2 = Alphasense_Sensors("SO2-B4", "164240348")
-ox = Alphasense_Sensors("OX-B431", "204240461")
-
