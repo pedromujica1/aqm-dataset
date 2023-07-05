@@ -42,14 +42,11 @@ pivoted_df = pivoted_df.resample('1T').asfreq()
 
 
 # Step 11: Add a prefix of 'e1_' to each column
-pivoted_df = pivoted_df.add_prefix('e1_')
+pivoted_df = pivoted_df.add_prefix('e2sp_')
 
 # Step 12: Save the modified DataFrame to a file (e.g., CSV)
-#pivoted_df.to_csv('E1/e1_df.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
+pivoted_df.to_csv('e2sp_df.csv', index=True)  # Replace 'path/to/save/modified_df.csv' with the actual file path where you want to save the DataFrame
 
 # Step 9: Output the transformed DataFrame
-#print(pivoted_df)
-print(pivoted_df.dtypes)
-pivoted_df['e1_co'].plot(marker='.')
 
 # %%
