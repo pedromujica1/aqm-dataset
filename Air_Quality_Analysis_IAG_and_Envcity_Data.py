@@ -260,13 +260,15 @@ no2 = Alphasense_Sensors("NO2-B43F", "202742056")
 so2 = Alphasense_Sensors("SO2-B4", "164240348")
 ox = Alphasense_Sensors("OX-B431", "204240461")
 
-we = df[preffix[0] + labels[0]]
-ae = df[preffix[0] + labels[1]]
+# to mV
+we = df[preffix[0] + labels[0]]*1000
+ae = df[preffix[0] + labels[1]]*1000
 temp = df[preffix[0] + 'temp']
 ppb, _ , _ , _ = co.all_algorithms(we, ae, temp.to_numpy())
 
 df[preffix[0] + 'co'] = ppb / 1000
 
+plt.plot(ppb)
 # print(df.iloc[0])
 # print(co.all_algorithms(0.46, 0.3, np.array(29.2)))
 
@@ -304,7 +306,7 @@ from scipy.stats import uniform, randint
 #               'randomforestregressor__criterion': ['squared_error', 'absolute_error', 'friedman_mse']}
 # # 
 
-
+# np.geomspace(2, 1024, 10)
 param_grid = {"randomforestregressor__n_estimators": np.array([32, 128, 512, 1024]),
               # "randomforestregressor__max_depth": None,
               #  "randomforestregressor__oob_score" : [True],
@@ -319,35 +321,37 @@ gs = GridSearchCV(regressor, param_grid=param_grid, n_jobs=-1, verbose = 3,\
                   return_train_score=True, cv = kfold, error_score = 'raise')
 
     
-# res = gs.fit(X_train,y_train)
+res = gs.fit(X_train,y_train)
 
-# %%
+# %% Resultado da otimização
 print(train_data := pd.DataFrame(res.cv_results_))
 
 with open('tabela_treino.tex', 'w') as f:
-    f.write(train_data.to_latex())
+    f.write(train_data.style.to_latex())
     
     
 var = 'squared_error'
 var2 = 'sqrt'
 # mse = train_data.query("param_randomforestregressor__criterion == @var and param_randomforestregressor__max_features == @var2")
-mse = train_data.query("param_randomforestregressor__criterion == @var")
+mse_df = train_data.query("param_randomforestregressor__criterion == @var")
 
 with open('tabela_treino_mse.tex', 'w') as f:
-    f.write(mse.to_latex())
+    f.write(mse_df.style.to_latex())
     
-mse = mse.sort_values('param_randomforestregressor__n_estimators', axis = 0)
+mse_df = mse_df.sort_values('param_randomforestregressor__n_estimators', axis = 0)
 
 # Plot the responses for different events and regions
 sns.lineplot(x="param_randomforestregressor__n_estimators", y="mean_test_score",
              #hue="param_randomforestregressor__max_features", # style="event",
              data=train_data)
+plt.show()
 
 #%%
 
 # r2_score(y_true, y_pred)
 # x = X_train[:, 0]
 # print("Sem regr", r2_score(x, y_train))
+print("w/o  ML model Score: ", r2_score(X_train['e2sp_co'], y_train))
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
 print("Validation Score: ", r2_score(y_valid, gs.predict(X_valid)))
@@ -355,13 +359,15 @@ print("RMSE Score: ", 100*rmse(y_train, gs.predict(X_train)))
 
 sns.regplot(x = y_valid, y = gs.predict(X_valid))
 sns.regplot(x = y_test, y = gs.predict(X_test))
+plt.show()
 
+#%% Antes de tudo
 
-#%%
+# e1 = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
+e1 = {'co' : df['e2sp_co']}
+e2 = {'co' : df['iag_co']}
 
-# df['e2sp_temp'].plot(marker='.')
-plt.plot(df['e2sp_temp'].values, marker = '.')
-plt.plot(gs.predict(Xco), marker = '.')
+plot_data_by_time_and_regr_plot(e1, e2, labels = ['co'], latex_labels = 'co')
 
 #%%
 

@@ -19,13 +19,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_labels, start, end, e1_label = 'Station 1', e2_label = 'Station 2', style_plot = 'dark'):
+def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_labels, start=None, end=None, e1_label = 'Station 1', e2_label = 'Station 2', style_plot = 'dark'):
 
     for idx, l in enumerate(labels):
 
-        e1 = dict_data_e1[l].loc[start:end]
-        e2 = dict_data_e2[l].loc[start:end]
-
+        if start != None and end != None:
+            e1 = dict_data_e1[l].loc[start:end]
+            e2 = dict_data_e2[l].loc[start:end]
+        else:
+            e1 = dict_data_e1[l]
+            e2 = dict_data_e2[l]
+            
         concatenated = pd.concat([e1, e2], axis=1, keys=[e1_label, e2_label])
 
         #with sns.axes_style(style=style_plot):
@@ -52,21 +56,21 @@ def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_la
         ax2.set_box_aspect(1)
 
         # Format the x-axis labels
-        date_format = mdates.DateFormatter('%d/%m/%y')
-        ax1.xaxis.set_major_formatter(date_format)
-        ax1.tick_params(axis='x', labelrotation=45)
+        # date_format = mdates.DateFormatter('%d/%m/%y')
+        # ax1.xaxis.set_major_formatter(date_format)
+        # ax1.tick_params(axis='x', labelrotation=45)
 
         # ax1.set_xlim([0, dict_data_e1[l].index[-1]])
 
         # Using metric prefixes
-        ax1.yaxis.set_major_formatter(EngFormatter())
-        ax2.yaxis.set_major_formatter(EngFormatter())
-        ax2.xaxis.set_major_formatter(EngFormatter())
+        # ax1.yaxis.set_major_formatter(EngFormatter())
+        # ax2.yaxis.set_major_formatter(EngFormatter())
+        # ax2.xaxis.set_major_formatter(EngFormatter())
 
         # ax1.margins(0.1, 0.1)
         # ax2.margins(0.2, 0.2)
 
-        ax1.autoscale(enable = None, axis="x", tight=True)
+        # ax1.autoscale(enable = None, axis="x", tight=True)
         # ax2.autoscale(enable=None, axis="x", tight=True)
         fig.autofmt_xdate()
         # ax2.legend(loc='upper right', frameon=False, bbox_to_anchor=(1.25, 1.05))

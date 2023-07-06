@@ -10,14 +10,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from alphasense_b_sensors.alphasense_sensors import *
 
+import matplotlib.style as mplstyle
+# mplstyle.use('fast')
+
 aqm = pd.read_csv('envcity_aqm_df.csv')
 aqm.set_index('time', inplace=True)
+aqm.index = pd.to_datetime(aqm.index)
 aqm = aqm.loc['2023-06-01 16:41:00':'2023-06-23 12:00:00']
 
-aqm = aqm[['e2sp_ox_we', 'e2sp_ox_ae', 'e2sp_temp', 'iag_o3', 'e2sp_no2_we', 'e2sp_no2_ae']]
+aqm = aqm[['e2sp_ox_we', 'e2sp_ox_ae', 'e2sp_temp', 'iag_o3', 'e2sp_no2_we', 'e2sp_no2_ae', 'e2sp_co_we', 'iag_co']]
+aqm[(aqm > 50)] = np.nan
+aqm[(aqm < 0)] = np.nan
 aqm = aqm.dropna(axis=0)
-# aqm[(aqm > 50)] = np.nan
-# aqm[(aqm < 0)] = np.nan
 
 fig, ax = plt.subplots()
 fig.subplots_adjust(right=0.75)
@@ -91,8 +95,29 @@ fig.subplots_adjust(right=0.75)
 ox_ppb2, _, _, _ = ox.all_algorithms(raw_we=1000*aqm['e2sp_ox_we'] - no2_ppb*ox.no2_sensitivity/1000, raw_ae=1000*aqm['e2sp_ox_ae'], temp=aqm['e2sp_temp'])
 
 aqm['e2sp_ox2'] = ox_ppb2
-aqm['e2sp_ox2'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label = 'OX retirando NO2')
-aqm['e2sp_ox'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label = 'OX + NO2')
-aqm['iag_o3'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label ='Referencia')
-ax.set_ylim(0, 220)
-ax.legend()
+# aqm['e2sp_ox2'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label = 'OX retirando NO2')
+# aqm['e2sp_ox'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label = 'OX + NO2')
+# aqm['iag_o3'].plot(ax=ax, marker = '.', markersize = 2, linewidth=0.5, label ='Referencia')''
+# plt.plot(aqm['e2sp_ox2'].index, aqm['e2sp_ox2'].values)
+# plt.plot(aqm['iag_o3'].index + pd.Timedelta(hours=3), aqm['iag_o3'].values)
+# plt.gca().xaxis.set_major_locator(plt.MaxNLocator(4))
+# plt.gcf().autofmt_xdate()
+# ax.set_ylim(0, 220)
+# ax.legend()
+#%%
+from envcity_plot_lib import *
+from sklearn.metrics import r2_score
+from scipy import stats
+
+
+plt.plot(aqm['e2sp_co_we'].index, aqm['e2sp_co_we'].values + 1.5)
+plt.plot(aqm['iag_co'].index + pd.Timedelta(hours=0), aqm['iag_co'].values)
+plt.gca().xaxis.set_major_locator(plt.MaxNLocator(4))
+plt.gcf().autofmt_xdate()
+
+# e1 = {'ox' : aqm['e2sp_ox2']}
+# e2 = {'ox' : aqm['iag_o3']}
+
+# plot_data_by_time_and_regr_plot(e1, e2, labels=['ox'], latex_labels=['O_x'])
+
+#%%
