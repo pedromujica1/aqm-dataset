@@ -52,7 +52,8 @@ from alphasense_b_sensors.alphasense_sensors import *
 # In[14]:
 
 aqm = pd.read_csv('envcity_aqm_df.csv')
-
+print(aqm.shape)
+print(aqm.describe())
 #%%
 
 from itertools import product
@@ -79,6 +80,8 @@ aqm_filtered.set_index('time', inplace=True)
 aqm = aqm_filtered
 
 #%%
+print(aqm.shape)
+#%%
 labels =  ['co', 'so2', 'ox', 'no2']
 prefix = ['e1_', 'e2_', 'e2sp_']
 suffix = ['_ae', '_we']
@@ -93,6 +96,9 @@ for p in prefix:
   idx = (data > 50) | (data <= 1)
   data.loc[idx] = np.nan
   
+#%%
+
+print(aqm.shape)
 # In[37]:
 
 
@@ -175,14 +181,9 @@ def exploratory_analysis(dict_data_e1, dict_data_e2, labels, latex_labels, start
 # In[41]:
 
 
-labels =  ['so2_we', 'so2_ae']
-preffix = ['e2sp_']
-
 #latex_labels it is only for printing
-latex_labels = ['CO', 'NO_2', 'O_X', 'SO_2', 'PM1.0', 'PM2.5', 'PM10']
+# latex_labels = ['CO', 'NO_2', 'O_X', 'SO_2', 'PM1.0', 'PM2.5', 'PM10']
 
-
-# In[42]:
 
 # for label in labels:
 #   for p in preffix:
@@ -204,14 +205,18 @@ latex_labels = ['CO', 'NO_2', 'O_X', 'SO_2', 'PM1.0', 'PM2.5', 'PM10']
 
 #     plt.show()
 #     print(aqm[p+label].min(), aqm[p+label].max())
+#%%
+
+pin_ur = aqm['pin_umid'].isna().sum()
+print(pin_ur)
 
 #%%
 # ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
 plt.figure()
-aqm['e2sp_co_we'].loc['2023-03-18 10:00:00':'2023-03-22 10:00:00'].plot(marker = '.', linewidth = 0.1, color = 'b')
+aqm['e2sp_co_we'].plot(marker = '.', linewidth = 0.1, color = 'b')
 plt.gca().set_ylim([-0.5, 1])
 ax = plt.gca().twinx()
-aqm['e2sp_umid'].loc['2023-03-18 10:00:00':'2023-03-22 10:00:00'].plot(marker = '.', linewidth = 0.1, ax = ax, color = 'r')
+aqm['pin_umid'].plot(marker = '.', linewidth = 0.1, ax = ax, color = 'r')
 ax.set_ylim([0, 99])
 # plt.gcf().autofmt_xdate()
 plt.show()
@@ -244,15 +249,14 @@ label_ref= 'iag_co'
 
 df = aqm
 
-df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1], preffix[0] + 'co', 
-          'e2sp_temp', 'e2sp_umid', label_ref]]
+df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1], 'pin_umid', label_ref]]
 
 df.index = pd.to_datetime(df.index)
-# df = df.resample('15min').mean()
+df = df.resample('D').mean()
 # df = df.interpolate(method = 'time', limit=5)
 df = df.dropna()
 #
-
+print(df.shape)
 #%%
 
 co = Alphasense_Sensors("CO-B4", "162741354")
@@ -263,12 +267,14 @@ ox = Alphasense_Sensors("OX-B431", "204240461")
 # to mV
 we = df[preffix[0] + labels[0]]*1000
 ae = df[preffix[0] + labels[1]]*1000
-temp = df[preffix[0] + 'temp']
-ppb, _ , _ , _ = co.all_algorithms(we, ae, temp.to_numpy())
+# temp = df[preffix[0] + 'temp']
+# ppb, _ , _ , _ = co.all_algorithms(we, ae, temp.to_numpy())
+
+ppb = ((we - co.electronic_we) - (ae - co.electronic_ae))/co.sensitivity
 
 df[preffix[0] + 'co'] = ppb / 1000
 
-plt.plot(ppb)
+# plt.plot(ppb)
 # print(df.iloc[0])
 # print(co.all_algorithms(0.46, 0.3, np.array(29.2)))
 
@@ -276,7 +282,7 @@ plt.plot(ppb)
 
 Yco = df[label_ref]
 
-Xco = df.loc[Yco.index][[preffix[0] + 'co', preffix[0] + 'temp', preffix[0] + 'umid']]
+Xco = df.loc[Yco.index][[preffix[0] + 'co', preffix[0] + 'co_we',preffix[0] + 'co_ae', 'pin_umid']]
 
 X_train, X_valid, y_train, y_valid = train_test_split(Xco, Yco, train_size=0.8)
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train)
@@ -351,7 +357,7 @@ plt.show()
 # r2_score(y_true, y_pred)
 # x = X_train[:, 0]
 # print("Sem regr", r2_score(x, y_train))
-print("w/o  ML model Score: ", r2_score(X_train['e2sp_co'], y_train))
+# print("w/o  ML model Score: ", r2_score(X_train['e2sp_co'], y_train))
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
 print("Validation Score: ", r2_score(y_valid, gs.predict(X_valid)))
@@ -363,16 +369,11 @@ plt.show()
 
 #%% Antes de tudo
 
-# e1 = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
-e1 = {'co' : df['e2sp_co']}
+e1 = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
+# e1 = {'co' : df['e2sp_co']}
 e2 = {'co' : df['iag_co']}
 
 plot_data_by_time_and_regr_plot(e1, e2, labels = ['co'], latex_labels = 'co')
 
 #%%
-
 ## ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
-
-ox = aqm["e2sp_co_ae"].loc['2023-03-18 10:00:00':'2023-03-22 10:00:00'].plot(marker='.')
-
-#%%
