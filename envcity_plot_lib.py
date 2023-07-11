@@ -44,7 +44,7 @@ def plot_data_by_time_and_regr_plot(dict_data_e1, dict_data_e2, labels, latex_la
 
         sns.lineplot(data=concatenated, linewidth=1, ax=ax1)
         sns.regplot(data=concatenated, x = e1_label, y = e2_label, ax = ax2, marker = '.')
-
+        ax2.axline((0,0), slope=1)
         # Set axis labels and title
         ax1.set_title(f"$\mathrm{{{latex_labels[idx]}}}$ Concentration from {start} to {end}")
         ax1.set_ylabel("Concentration (ppb)")

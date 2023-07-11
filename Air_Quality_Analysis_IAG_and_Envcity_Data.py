@@ -393,11 +393,17 @@ plt.show()
 
 #%% Antes de tudo
 
-e1 = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
+e1_rf = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
 # e1 = {'co' : df['e2sp_co']}
-e2 = {'co' : df['iag_co']}
+e2_ref = {'co' : df['iag_co']}
 
 plot_data_by_time_and_regr_plot(e1, e2, labels = ['co'], latex_labels = 'co')
 
 #%%
 ## ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
+
+e1_rf = {'co' : pd.DataFrame(data=linReg.predict(Xco), index=Xco.index)}
+# e1 = {'co' : df['e2sp_co']}
+e2_ref = {'co' : df['iag_co']}
+
+plot_data_by_time_and_regr_plot(e1_rf, e2_ref, labels = ['co'], latex_labels = 'co')
