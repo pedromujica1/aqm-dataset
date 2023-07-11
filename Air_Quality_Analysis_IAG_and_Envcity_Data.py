@@ -223,6 +223,8 @@ plt.show()
 
 #%%
 
+from sklearn.linear_model import LinearRegression
+
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, KernelCenterer,Normalizer
 
 from sklearn.pipeline import make_pipeline
@@ -252,7 +254,7 @@ df = aqm
 df = aqm[[preffix[0] + labels[0], preffix[0] + labels[1], 'pin_umid', label_ref]]
 
 df.index = pd.to_datetime(df.index)
-df = df.resample('D').mean()
+df = df.resample('15min').mean()
 # df = df.interpolate(method = 'time', limit=5)
 df = df.dropna()
 #
@@ -323,6 +325,9 @@ param_grid = {"randomforestregressor__n_estimators": np.array([32, 128, 512, 102
 regressor = make_pipeline(RandomForestRegressor())
 # gs = AdaBoostRegressor()
 
+linReg = LinearRegression().fit(X_train, y_train)
+
+
 gs = GridSearchCV(regressor, param_grid=param_grid, n_jobs=-1, verbose = 3,\
                   return_train_score=True, cv = kfold, error_score = 'raise')
 
@@ -354,10 +359,27 @@ plt.show()
 
 #%%
 
+print("Linear Regression Model")
+print("Train Score: ", linReg.score(X_train, y_train))
+print("Test Score: ", linReg.score(X_test, y_test))
+print("Validation Score: ", r2_score(y_valid, linReg.predict(X_valid)))
+print("RMSE Score: ", 100*rmse(y_train, linReg.predict(X_train)))
+
+print(linReg.coef_)
+
+sns.regplot(x = y_valid, y = linReg.predict(X_valid))
+sns.regplot(x = y_test, y = linReg.predict(X_test))
+plt.gca().axline((0,0), slope=1)
+plt.show()
+
+
+#%%
+
 # r2_score(y_true, y_pred)
 # x = X_train[:, 0]
 # print("Sem regr", r2_score(x, y_train))
 # print("w/o  ML model Score: ", r2_score(X_train['e2sp_co'], y_train))
+print("Random Forest Model")
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
 print("Validation Score: ", r2_score(y_valid, gs.predict(X_valid)))
@@ -365,6 +387,8 @@ print("RMSE Score: ", 100*rmse(y_train, gs.predict(X_train)))
 
 sns.regplot(x = y_valid, y = gs.predict(X_valid))
 sns.regplot(x = y_test, y = gs.predict(X_test))
+plt.gca().axline((0,0), slope=1)
+
 plt.show()
 
 #%% Antes de tudo
