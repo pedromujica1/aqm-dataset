@@ -6,7 +6,7 @@
 
 # In[11]:
 
-
+#Importações e configurações
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -16,13 +16,14 @@ from sys import version
 
 from IPython.display import display, HTML
 
+#Configurações do Matplotlib
 plt.rcParams.update({
     "text.usetex": False,
     "font.family": "serif",
     "font.sans-serif": "Times",
     "font.size" : 10,
 })
-
+#Versões das bibliotecas
 print("python version: ", version)
 print("Numpy version: ", np.__version__)
 print("Pandas version: ", pd.__version__)
@@ -51,11 +52,13 @@ from alphasense_b_sensors.alphasense_sensors import *
 
 # In[14]:
 
+##Leitura do dataset
 aqm = pd.read_csv('envcity_aqm_df.csv')
 print(aqm.shape)
 print(aqm.describe())
 #%%
 
+#Limpeza de colunas não utilizadas
 from itertools import product
 
 for label, p, s in product(['anem'], ['e1_', 'e2_', 'e2sp_'], ['_volt', '']):
@@ -70,6 +73,7 @@ for label, p, s in product(['anem'], ['e1_', 'e2_', 'e2sp_'], ['_volt', '']):
 
 aqm_filtered = aqm.copy()
 
+#Remoção de linhas com valores inválidos
 for index, row in aqm.iterrows():
     if (row == -3).sum() > 0:
         aqm_filtered.drop(index, inplace=True)
@@ -82,6 +86,7 @@ aqm = aqm_filtered
 #%%
 print(aqm.shape)
 #%%
+# ## Filtro por limites físicos dos sensores
 labels =  ['co', 'so2', 'ox', 'no2']
 prefix = ['e1_', 'e2_', 'e2sp_']
 suffix = ['_ae', '_we']
@@ -97,7 +102,7 @@ for p in prefix:
   data.loc[idx] = np.nan
   
 #%%
-
+# ## Verificando colunas faltantes
 print(aqm.shape)
 # In[37]:
 
@@ -206,12 +211,14 @@ def exploratory_analysis(dict_data_e1, dict_data_e2, labels, latex_labels, start
 #     plt.show()
 #     print(aqm[p+label].min(), aqm[p+label].max())
 #%%
-
+# ## Checando ausência de umidade relativa
 pin_ur = aqm['pin_umid'].isna().sum()
 print(pin_ur)
 
 #%%
 # ['2023-03-18 10:00:00':'2023-03-22 10:00:00'].
+
+# ## Plot dos dados brutos: sensor vs. umidade relativa
 plt.figure()
 aqm['e2sp_co_we'].plot(marker = '.', linewidth = 0.1, color = 'b')
 plt.gca().set_ylim([-0.5, 1])
@@ -222,7 +229,7 @@ ax.set_ylim([0, 99])
 plt.show()
 
 #%%
-
+#Importação de modelos e métricas do scikit-learn
 from sklearn.linear_model import LinearRegression
 
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, KernelCenterer,Normalizer
@@ -243,7 +250,7 @@ from sys import version
 
 
 #%%
-
+ ## Preparo do dataset para regressão
 labels =  ['co_we', 'co_ae']
 preffix = ['e2sp_']
 label_ref= 'iag_co'
@@ -261,6 +268,7 @@ df = df.dropna()
 print(df.shape)
 #%%
 
+# ## Cálculo da concentração em ppm com coeficientes da Alphasense
 co = Alphasense_Sensors("CO-B4", "162741354")
 no2 = Alphasense_Sensors("NO2-B43F", "202742056")
 so2 = Alphasense_Sensors("SO2-B4", "164240348")
@@ -281,14 +289,16 @@ df[preffix[0] + 'co'] = ppb / 1000
 # print(co.all_algorithms(0.46, 0.3, np.array(29.2)))
 
 #%%
-
+# ## Preparação de features (X) e target (Y)
 Yco = df[label_ref]
 
 Xco = df.loc[Yco.index][[preffix[0] + 'co', preffix[0] + 'co_we',preffix[0] + 'co_ae', 'pin_umid']]
 
+# Split dos dados
 X_train, X_valid, y_train, y_valid = train_test_split(Xco, Yco, train_size=0.8)
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train)
 
+# Validação cruzada repetida
 kfold = RepeatedKFold(n_splits = 5, n_repeats = 1)
 # kfold = StratifiedKFold(n_splits = 5)
 
@@ -304,6 +314,8 @@ print(X_valid.shape)
 #               # "randomforestregressor__bootstrap" : [True],
 #               'randomforestregressor__max_features': ["sqrt", "log2", 0.3, 0.1],
 #               'randomforestregressor__criterion': ['squared_error']}
+
+# ## Otimização de hiperparâmetros (Random Forest)
 from scipy.stats import uniform, randint
 
 # param_grid = {"randomforestregressor__n_estimators": randint(1, 512),
@@ -322,12 +334,14 @@ param_grid = {"randomforestregressor__n_estimators": np.array([32, 128, 512, 102
               # 'randomforestregressor__max_features': ["sqrt", "log2", None],
               'randomforestregressor__criterion': ['squared_error' ]}# 'absolute_error', 'friedman_mse']}
 
+# Pipeline com RandomForest
 regressor = make_pipeline(RandomForestRegressor())
 # gs = AdaBoostRegressor()
 
 linReg = LinearRegression().fit(X_train, y_train)
 
 
+# GridSearch com validação cruzada
 gs = GridSearchCV(regressor, param_grid=param_grid, n_jobs=-1, verbose = 3,\
                   return_train_score=True, cv = kfold, error_score = 'raise')
 
@@ -343,6 +357,7 @@ with open('tabela_treino.tex', 'w') as f:
     
 var = 'squared_error'
 var2 = 'sqrt'
+# Plot da métrica em função do número de estimadores
 # mse = train_data.query("param_randomforestregressor__criterion == @var and param_randomforestregressor__max_features == @var2")
 mse_df = train_data.query("param_randomforestregressor__criterion == @var")
 
@@ -358,7 +373,7 @@ sns.lineplot(x="param_randomforestregressor__n_estimators", y="mean_test_score",
 plt.show()
 
 #%%
-
+# ## Avaliação do modelo linear
 print("Linear Regression Model")
 print("Train Score: ", linReg.score(X_train, y_train))
 print("Test Score: ", linReg.score(X_test, y_test))
@@ -366,7 +381,7 @@ print("Validation Score: ", r2_score(y_valid, linReg.predict(X_valid)))
 print("RMSE Score: ", 100*rmse(y_train, linReg.predict(X_train)))
 
 print(linReg.coef_)
-
+# Visualização dos resultados do modelo linear
 sns.regplot(x = y_valid, y = linReg.predict(X_valid))
 sns.regplot(x = y_test, y = linReg.predict(X_test))
 plt.gca().axline((0,0), slope=1)
@@ -379,6 +394,7 @@ plt.show()
 # x = X_train[:, 0]
 # print("Sem regr", r2_score(x, y_train))
 # print("w/o  ML model Score: ", r2_score(X_train['e2sp_co'], y_train))
+# ## Avaliação do modelo Random Forest
 print("Random Forest Model")
 print("Train Score: ", gs.score(X_train, y_train))
 print("Test Score: ", gs.score(X_test, y_test))
@@ -392,7 +408,7 @@ plt.gca().axline((0,0), slope=1)
 plt.show()
 
 #%% Antes de tudo
-
+# ## Visualização do modelo calibrado vs referência
 e1_rf = {'co' : pd.DataFrame(data=gs.predict(Xco), index=Xco.index)}
 # e1 = {'co' : df['e2sp_co']}
 e2_ref = {'co' : df['iag_co']}
