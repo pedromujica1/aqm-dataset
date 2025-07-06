@@ -5,8 +5,8 @@ Created on Tue Mar  1 16:39:50 2022
 @author: maruzka
 """
 
-import alphasense_b_sensors.dados_correcao_temp as dados_temp
-import alphasense_b_sensors.dados_alphasense as dados_sens
+import dados_correcao_temp as dados_temp
+import dados_alphasense as dados_sens
 import numpy as np
 import functools
 
